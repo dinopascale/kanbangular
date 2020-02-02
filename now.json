@@ -2,7 +2,8 @@
     "name": "kanbangular",
     "version": 2,
     "env": {
-        "MONGODB_URI": "@mongodb-uri"
+        "MONGODB_URI": "@mongodb-uri",
+        "JWT_SECRET": "@jwt-secret"
     }
   }
   

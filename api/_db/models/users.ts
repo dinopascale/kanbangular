@@ -2,13 +2,17 @@ import * as mongoose from 'mongoose'
 import * as bcrypt from 'bcryptjs';
 import validator from 'validator';
 
-export interface IUser extends mongoose.Document {
+export interface IUserDocument extends mongoose.Document {
     name: string; 
     surname: string;
     email: string;
     password: string;
-    findByCredentials(): Promise<IUser>;
+    findByCredentials(email: string, password: string): Promise<IUserDocument>;
   };
+
+export interface IUserModel extends mongoose.Model<IUserDocument> {
+    findByCredentials(email: string, password: string): Promise<IUserDocument>;
+}
 
 export interface user {
     name: string; 
@@ -31,12 +35,12 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        unique: true,
+        unique: [true, 'Email already exist'],
         required: true,
         trim: true,
         lowercase: true,
         validate: {
-            validator: value => validator.isEmail(value),
+            validator: (value: string) => validator.isEmail(value),
             message: 'Email is invalid'
         }
     },
@@ -48,7 +52,7 @@ const userSchema = new mongoose.Schema({
     }
 })
 
-userSchema.statics.findByCredentials = async (email, password): Promise<IUser> => {
+userSchema.statics.findByCredentials = async (email, password): Promise<IUserDocument> => {
     const user = await User.findOne({ email })
 
     if (!user) {
@@ -58,7 +62,7 @@ userSchema.statics.findByCredentials = async (email, password): Promise<IUser> =
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-       throw new Error('Unable to login')       
+       throw new Error('Unable to login')
     }
 
     return user;
@@ -66,13 +70,22 @@ userSchema.statics.findByCredentials = async (email, password): Promise<IUser> =
 
 
 userSchema.pre('save', async function (next) {
-    const user = <IUser>this
+    const user = <IUserDocument>this
 
-    if (user.isModified('password')) {
-        user.password = await bcrypt.hash(user.password, 8)
+    if (!user.isModified('password')) {
+        return next();
     }
 
+    user.password = await bcrypt.hash(user.password, 8);
     next();
 })
 
-export const User = mongoose.model<IUser>('User', userSchema)
+userSchema.post('save', function(err, doc, next) {
+    if(err.name === 'MongoError' && err.code === 11000) {
+        next(new Error('Email must be unique'))
+    } else {
+        next(err);
+    }
+})
+
+export const User = mongoose.model<IUserDocument, IUserModel>('User', userSchema)

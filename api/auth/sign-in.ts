@@ -1,33 +1,28 @@
 import { NowRequest, NowResponse } from '@now/node';
 import { connectToDatabase } from '../_db/mongodb';
 import { Collection } from 'mongodb';
-import { User, IUser, user } from '../_db/models/users';
+import { User } from '../_db/models/users';
+import * as jwt from 'jsonwebtoken';
 
 const signIn = async (req: NowRequest, res: NowResponse) => {
 
-    const { password, email, name, surname }: user = req.body; 
+    const { password, email, name, surname }: {password: string, email: string, name: string, surname: string} = req.body;
 
     try {
-        const db = await connectToDatabase(process.env.MONGODB_URI)
+        await connectToDatabase(process.env.MONGODB_URI)
 
-        const Users: Collection<IUser> = await db.collection('users');
+        const doc = new User({email, password, surname, name})
 
-        const alreadyExist = await Users.findOne({email})
+        await doc.save();
 
-        if (!!alreadyExist) { throw new Error('email already exist'); }
+        const token = jwt.sign({email, password}, process.env.JWT_SECRET, {expiresIn: '1h'})
+            
+        res.status(200).send({id: doc._id, token});
 
-        const newUser = new User({email, password, name, surname})
-
-        console.log(newUser);
-
-        await newUser.save();
-        
-        console.log(newUser);
-    
-        res.status(200).json({newUser});
     } catch(e) {
-        console.log(e)
-        res.status(400).json({error: e});
+
+        res.status(400).send({error: e.message});
+    
     }
 }
 

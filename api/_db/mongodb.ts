@@ -1,7 +1,8 @@
 import * as url from 'url';
 import { MongoClient, Db } from 'mongodb';
+import {connect, Mongoose} from 'mongoose';
 
-let chachedDb: Db = null;
+let chachedDb: Mongoose = null;
 
 // maybe it's better as wrapper 
 
@@ -34,13 +35,17 @@ let chachedDb: Db = null;
 //     }
 // }
 
-export async function connectToDatabase(uri: string): Promise<Db> {
+export async function connectToDatabase(uri: string): Promise<Mongoose> {
     if (chachedDb) return chachedDb;
 
     try {
-        const client: MongoClient = await MongoClient.connect(uri, {useNewUrlParser: true})
+        // const client: MongoClient = await MongoClient.connect('localhost:27017', {useNewUrlParser: true, useUnifiedTopology: true})
 
-        const db: Db = client.db(url.parse(uri).pathname.substr(1))
+        // const db: Db = client.db(url.parse(uri).pathname.substr(1))
+        const db = await connect(uri, {
+            useNewUrlParser: true,
+            useCreateIndex: true
+        })
     
         chachedDb = db;
         return db;
