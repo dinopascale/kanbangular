@@ -7,7 +7,7 @@ import { HttpClient } from '@angular/common/http';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  title = 'kanbangular';
+  title;
 
   constructor(private _http: HttpClient) {}
 
@@ -15,7 +15,7 @@ export class AppComponent implements OnInit {
 
     // console.log(this.baseUrl);
 
-    this._http.get('/api/greet').subscribe()
+    this.title = this._http.get('/api/greet');
   }
 
 }
