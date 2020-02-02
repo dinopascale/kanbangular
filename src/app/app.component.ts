@@ -15,7 +15,7 @@ export class AppComponent implements OnInit {
 
     // console.log(this.baseUrl);
 
-    this.title = this._http.get('/api/greet');
+    this.title = this._http.get('/api/users');
   }
 
 }
